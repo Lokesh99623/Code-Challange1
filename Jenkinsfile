@@ -9,29 +9,35 @@ pipeline {
                     }
                 }
             }
+            
         }
 }
 def fetchData() {
-    def response = httpRequest "https://reqres.in/api/users?page=2"
+    def pageNum = 1
     String bottomTag, topTag, body = "", totalText
-    topTag = "<!DOCTYPE html> <html> <body> <h1>ReqRes members <hr></h1>"
+    topTag = '<!DOCTYPE html> <html> <head> <style> .flex{ display: flex; flex-wrap: wrap; justify-content: center;align-items: center;}.flex > div {text-align: center;padding:15px}img {display: inline-block;max-width: 100%;}</style></head> <h1 style="text-align:center; font-family: sans-serif;">Hello ReqRes members</h1> <div class = "flex">'
     // echo "${response}"
-    JsonSlurper slurper = new JsonSlurper()
-    Map parsedJson = slurper.parseText(response.content)
-    for(def x: parsedJson.data) {
-        def name = x.first_name
-        def email = x.email
-        def image = x.avatar
-        
-        body += '<p>' + name + '</p>' + '<br>' + '<p>' + email + '</p>' + '<br>' + '<img src="' + image + '"' + 'width="50"' + 'height="60">' + '<hr>'
-        // echo "$body"
+    while(pageNum) {    
+        def response = httpRequest "https://reqres.in/api/users?page=$pageNum"
+        JsonSlurper slurper = new JsonSlurper()
+        Map parsedJson = slurper.parseText(response.content)
+        if(parsedJson.data.isEmpty())
+            break
+        for(def x: parsedJson.data) {
+            def name = x.first_name
+            def email = x.email
+            def image = x.avatar
+            
+            body += '<div>' + '<p><strong>' + name + '</strong></p>' + '<p>' + email + '</p>' + '<img src="' + image + '">' + "</div>" 
+            // echo "$body"
+        }
+        pageNum++
     }
-    bottomTag = "</body> </html>"
+    bottomTag = "</div> </body> </html>"
     totalText = topTag + body + bottomTag 
-    // echo "$totalText"
+    echo "$totalText"
     def newFile = new File("${env.WORKSPACE}/index.html")
     newFile.createNewFile()
     newFile.text = totalText
     // openHtml()
 }
-
